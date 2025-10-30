@@ -81,7 +81,6 @@ export default function Reader() {
             setCurrentChapterId(chapterId);
             setIsSidebarOpen(false);
             saveProgress(chapterId,0);
-            window.scrollTo(0, 0);
         }
     };
 
@@ -91,7 +90,6 @@ export default function Reader() {
             setCurrentChapterId(chapterId);
             setIsSidebarOpen(false);
             saveProgress(chapterId,0);
-            window.scrollTo(0, 0);
         }
     };
 
@@ -99,13 +97,19 @@ export default function Reader() {
         setCurrentChapterId(chapterId);
         setIsSidebarOpen(false);
         saveProgress(chapterId,0);
-        window.scrollTo(0, 0);
     };
 
     const saveProgress = (newChapterId: string, newPosition: number) => {
         const progressData = { chapterId: newChapterId, position: newPosition };
         console.log("Saving progress:", progressData);
         localStorage.setItem(bookId, JSON.stringify(progressData));
+    };
+
+    // Hàm TTS
+    const speakText = (text: string) => {
+        const utterance = new SpeechSynthesisUtterance(text); // Khởi tạo đối tượng TTS
+        utterance.lang = 'vi-VN'; // Chọn ngôn ngữ (có thể thay đổi theo yêu cầu)
+        speechSynthesis.speak(utterance); // Phát âm văn bản
     };
 
     if (!bookId) {
@@ -164,6 +168,13 @@ export default function Reader() {
                 </div>
 
                 <ThemeToggle />
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => currentChapter && speakText(currentChapter.content)}
+                >
+                    Phát âm
+                </Button>
             </header>
 
             <div className="flex-1 flex overflow-hidden">
