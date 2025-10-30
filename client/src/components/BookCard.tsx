@@ -14,12 +14,12 @@ export function BookCard({ book }: BookCardProps) {
         className="group overflow-hidden hover-elevate active-elevate-2 cursor-pointer transition-all duration-200"
         data-testid={`card-book-${book.id}`}
       >
-        <div className="aspect-[2/3] bg-muted relative overflow-hidden">
+        <div className="aspect-[2/3] bg-muted relative overflow-hidden rounded-t-lg">
           {book.coverImage ? (
             <img
               src={book.coverImage}
               alt={book.title}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover shadow-md"
               loading="lazy"
             />
           ) : (

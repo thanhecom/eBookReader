@@ -18,13 +18,13 @@ export function ChapterControls({
   const hasNext = currentChapter < totalChapters;
 
   return (
-    <div className="flex items-center justify-between gap-4 p-4 border-t bg-background">
+    <div className="sticky bottom-0 md:relative flex items-center justify-between gap-4 p-4 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <Button
         variant="outline"
         onClick={onPrevious}
         disabled={!hasPrevious}
         data-testid="button-previous-chapter"
-        className="flex-1 sm:flex-none"
+        className="flex-1 sm:flex-none min-h-12"
       >
         <ChevronLeft className="w-4 h-4 mr-2" />
         <span className="hidden sm:inline">Chương trước</span>
@@ -40,7 +40,7 @@ export function ChapterControls({
         onClick={onNext}
         disabled={!hasNext}
         data-testid="button-next-chapter"
-        className="flex-1 sm:flex-none"
+        className="flex-1 sm:flex-none min-h-12"
       >
         <span className="hidden sm:inline">Chương sau</span>
         <span className="sm:hidden">Sau</span>

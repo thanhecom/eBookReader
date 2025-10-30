@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Book, BookContent } from "@shared/schema";
 import { ChapterNavigation } from "@/components/ChapterNavigation";
 import { ChapterContent } from "@/components/ChapterContent";
@@ -17,6 +17,8 @@ export default function Reader() {
   
   const [currentChapterId, setCurrentChapterId] = useState<string>("");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isHeaderVisible, setIsHeaderVisible] = useState(true);
+  const lastScrollY = useRef(0);
 
   const { data: book } = useQuery<Book>({
     queryKey: ["/api/books", bookId],
@@ -33,6 +35,15 @@ export default function Reader() {
       setCurrentChapterId(bookContent.toc[0].id);
     }
   }, [bookContent, currentChapterId]);
+
+  const handleScroll = (scrollY: number) => {
+    if (scrollY > lastScrollY.current && scrollY > 100) {
+      setIsHeaderVisible(false);
+    } else if (scrollY < lastScrollY.current) {
+      setIsHeaderVisible(true);
+    }
+    lastScrollY.current = scrollY;
+  };
 
   const currentChapter = bookContent?.chapters.find(
     (ch) => ch.id === currentChapterId
@@ -67,7 +78,11 @@ export default function Reader() {
 
   return (
     <div className="h-screen flex flex-col bg-background">
-      <header className="sticky top-0 z-50 bg-background border-b h-16 flex items-center px-4 gap-3">
+      <header 
+        className={`sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b h-16 flex items-center px-4 gap-3 transition-transform duration-300 ${
+          isHeaderVisible ? 'translate-y-0' : '-translate-y-full'
+        }`}
+      >
         <Button
           variant="ghost"
           size="icon"
@@ -133,6 +148,7 @@ export default function Reader() {
                 title={currentChapter.title}
                 content={currentChapter.content}
                 isLoading={isLoadingContent}
+                onScroll={handleScroll}
               />
             ) : (
               <div className="flex items-center justify-center h-full">

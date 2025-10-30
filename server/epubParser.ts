@@ -2,7 +2,11 @@ import AdmZip from "adm-zip";
 import { parseStringPromise } from "xml2js";
 import * as path from "path";
 import { Book, Chapter, BookContent } from "@shared/schema";
-import { randomUUID } from "crypto";
+import { randomUUID, createHash } from "crypto";
+
+function generateBookId(filename: string): string {
+  return createHash('sha256').update(filename).digest('hex').slice(0, 32);
+}
 
 interface OpfMetadata {
   title?: string[];
@@ -101,7 +105,7 @@ export class EpubParser {
 
   async extractMetadata(filename: string): Promise<Book> {
     await this.findOpfPath();
-    const opf = await parseOpf();
+    const opf = await this.parseOpf();
 
     const metadata = opf.package.metadata[0];
     const manifest = opf.package.manifest[0];
@@ -132,7 +136,7 @@ export class EpubParser {
     }
 
     return {
-      id: randomUUID(),
+      id: generateBookId(filename),
       filename,
       title,
       author,
@@ -145,7 +149,7 @@ export class EpubParser {
 
   async extractContent(bookId: string): Promise<BookContent> {
     await this.findOpfPath();
-    const opf = await parseOpf();
+    const opf = await this.parseOpf();
 
     const manifest = opf.package.manifest[0];
     const spine = opf.package.spine[0];
@@ -230,8 +234,4 @@ export class EpubParser {
     
     return clean.trim();
   }
-}
-
-async function parseOpf(): Promise<OpfPackage> {
-  throw new Error("Method should be called on instance");
 }

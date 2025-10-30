@@ -16,6 +16,8 @@ async function ensureBooksFolder() {
   }
 }
 
+const bookFilePaths = new Map<string, string>();
+
 async function scanAndLoadBooks(): Promise<void> {
   await ensureBooksFolder();
   
@@ -29,9 +31,7 @@ async function scanAndLoadBooks(): Promise<void> {
         const parser = new EpubParser(filePath);
         const book = await parser.extractMetadata(file);
         storage.setBook(book);
-        
-        const content = await parser.extractContent(book.id);
-        storage.setBookContent(content);
+        bookFilePaths.set(book.id, filePath);
       } catch (error) {
         console.error(`Error parsing ${file}:`, error);
       }
@@ -73,10 +73,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/books/:id/content", async (req, res) => {
     try {
       const { id } = req.params;
-      const content = await storage.getBookContent(id);
+      let content = await storage.getBookContent(id);
       
       if (!content) {
-        return res.status(404).json({ error: "Book content not found" });
+        const filePath = bookFilePaths.get(id);
+        if (!filePath) {
+          return res.status(404).json({ error: "Book not found" });
+        }
+        
+        const parser = new EpubParser(filePath);
+        content = await parser.extractContent(id);
+        storage.setBookContent(content);
       }
       
       res.json(content);
