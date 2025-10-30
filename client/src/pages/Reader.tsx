@@ -1,0 +1,156 @@
+import { useQuery } from "@tanstack/react-query";
+import { useRoute, useLocation } from "wouter";
+import { useState, useEffect } from "react";
+import { Book, BookContent } from "@shared/schema";
+import { ChapterNavigation } from "@/components/ChapterNavigation";
+import { ChapterContent } from "@/components/ChapterContent";
+import { ChapterControls } from "@/components/ChapterControls";
+import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { ArrowLeft, Menu, X } from "lucide-react";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+
+export default function Reader() {
+  const [, params] = useRoute("/book/:id");
+  const [, setLocation] = useLocation();
+  const bookId = params?.id;
+  
+  const [currentChapterId, setCurrentChapterId] = useState<string>("");
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  const { data: book } = useQuery<Book>({
+    queryKey: ["/api/books", bookId],
+    enabled: !!bookId,
+  });
+
+  const { data: bookContent, isLoading: isLoadingContent } = useQuery<BookContent>({
+    queryKey: ["/api/books", bookId, "content"],
+    enabled: !!bookId,
+  });
+
+  useEffect(() => {
+    if (bookContent?.toc && bookContent.toc.length > 0 && !currentChapterId) {
+      setCurrentChapterId(bookContent.toc[0].id);
+    }
+  }, [bookContent, currentChapterId]);
+
+  const currentChapter = bookContent?.chapters.find(
+    (ch) => ch.id === currentChapterId
+  );
+
+  const currentChapterIndex = bookContent?.toc.findIndex(
+    (ch) => ch.id === currentChapterId
+  ) ?? -1;
+
+  const handlePreviousChapter = () => {
+    if (bookContent && currentChapterIndex > 0) {
+      setCurrentChapterId(bookContent.toc[currentChapterIndex - 1].id);
+      setIsSidebarOpen(false);
+    }
+  };
+
+  const handleNextChapter = () => {
+    if (bookContent && currentChapterIndex < bookContent.toc.length - 1) {
+      setCurrentChapterId(bookContent.toc[currentChapterIndex + 1].id);
+      setIsSidebarOpen(false);
+    }
+  };
+
+  const handleChapterSelect = (chapterId: string) => {
+    setCurrentChapterId(chapterId);
+    setIsSidebarOpen(false);
+  };
+
+  if (!bookId) {
+    return null;
+  }
+
+  return (
+    <div className="h-screen flex flex-col bg-background">
+      <header className="sticky top-0 z-50 bg-background border-b h-16 flex items-center px-4 gap-3">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setLocation("/")}
+          data-testid="button-back-to-library"
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </Button>
+
+        <Sheet open={isSidebarOpen} onOpenChange={setIsSidebarOpen}>
+          <SheetTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="lg:hidden"
+              data-testid="button-toggle-sidebar"
+            >
+              {isSidebarOpen ? (
+                <X className="w-5 h-5" />
+              ) : (
+                <Menu className="w-5 h-5" />
+              )}
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="w-[300px] p-0">
+            {bookContent && (
+              <ChapterNavigation
+                chapters={bookContent.toc}
+                currentChapterId={currentChapterId}
+                onChapterSelect={handleChapterSelect}
+              />
+            )}
+          </SheetContent>
+        </Sheet>
+
+        <div className="flex-1 min-w-0">
+          <h1 
+            className="font-semibold truncate" 
+            data-testid="text-book-title"
+          >
+            {book?.title || "Đang tải..."}
+          </h1>
+        </div>
+
+        <ThemeToggle />
+      </header>
+
+      <div className="flex-1 flex overflow-hidden">
+        <aside className="hidden lg:block w-[300px] border-r">
+          {bookContent && (
+            <ChapterNavigation
+              chapters={bookContent.toc}
+              currentChapterId={currentChapterId}
+              onChapterSelect={handleChapterSelect}
+            />
+          )}
+        </aside>
+
+        <div className="flex-1 flex flex-col">
+          <div className="flex-1 overflow-hidden">
+            {currentChapter ? (
+              <ChapterContent
+                title={currentChapter.title}
+                content={currentChapter.content}
+                isLoading={isLoadingContent}
+              />
+            ) : (
+              <div className="flex items-center justify-center h-full">
+                <p className="text-muted-foreground">Đang tải nội dung...</p>
+              </div>
+            )}
+          </div>
+
+          {bookContent && (
+            <ChapterControls
+              currentChapter={currentChapterIndex + 1}
+              totalChapters={bookContent.toc.length}
+              onPrevious={handlePreviousChapter}
+              onNext={handleNextChapter}
+            />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
